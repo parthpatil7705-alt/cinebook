@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-8 text-slate-100 flex flex-col lg:flex-row gap-8">
+    <div class="flex-grow">
+        <!-- Show Header -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-6 border border-slate-700">
+            <h1 class="text-2xl font-bold">{{ show.movie.title }}</h1>
+            <p class="text-slate-400">{{ show.screen.theater.name }} - {{ show.screen.name }}</p>
+            <p class="text-slate-400">{{ show.start_time|date:"D, d M Y - h:i A" }}</p>
+        </div>
+
+        <!-- Legend -->
+        <div class="flex gap-4 justify-center mb-8 text-sm">
+            <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-emerald-600"></div> Available</div>
+            <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-indigo-600"></div> Selected</div>
+            <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-slate-600"></div> Booked</div>
+            <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-amber-600"></div> Held</div>
+        </div>
+
+        <!-- Seat Grid -->
+        <div class="bg-slate-900 p-8 rounded-xl border border-slate-700 overflow-x-auto text-center">
+            <div class="w-3/4 max-w-2xl h-8 mx-auto bg-slate-700 rounded mb-12 shadow-[0_15px_30px_-5px_rgba(255,255,255,0.1)]" style="border-radius: 50% / 100% 100% 0 0;">
+                <p class="text-xs text-slate-400 pt-1">SCREEN</p>
+            </div>
+            
+            <div class="inline-block text-left" id="seat-map">
+                {% for row, seats in seats_by_row.items %}
+                <div class="flex items-center gap-4 mb-2 justify-center">
+                    <div class="w-6 text-slate-500 text-sm font-bold">{{ row }}</div>
+                    <div class="flex gap-2">
+                        {% for seat in seats %}
+                            <button 
+                                class="seat-btn w-8 h-8 rounded text-xs transition duration-200 
+                                {% if seat.status == 'available' %}
+                                    bg-emerald-600 hover:bg-emerald-500
+                                {% elif seat.status == 'booked' %}
+                                    bg-slate-600 cursor-not-allowed
+                                {% else %}
+                                    bg-amber-600 cursor-not-allowed
+                                {% endif %}"
+                                data-seat-id="{{ seat.id }}"
+                                data-price="{{ seat.price }}"
+                                data-name="{{ seat.display_name }}"
+                                data-status="{{ seat.status }}"
+                            >
+                                {{ seat.seat_number }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Panel -->
+    <div class="w-full lg:w-80 flex-shrink-0">
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 sticky top-4">
+            <h2 class="text-xl font-bold mb-4">Selection Summary</h2>
+            <div id="selected-seats-list" class="mb-4 min-h-[50px] text-sm text-slate-300">
+                No seats selected.
+            </div>
+            <div class="border-t border-slate-700 pt-4 mb-4 flex justify-between font-bold text-lg">
+                <span>Total</span>
+                <span id="total-price">$0.00</span>
+            </div>
+            
+            <form id="booking-form" method="post" action="{% url 'bookings:create_summary' show.id %}">
+                {% csrf_token %}
+                <div id="hidden-inputs"></div>
+                <button type="submit" id="proceed-btn" disabled class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Proceed to Payment
+                </button>
+            </form>
+            
+            <div id="timer-container" class="hidden mt-4 text-center text-amber-500 font-bold">
+                Time left: <span id="timer">02:00</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const seats = document.querySelectorAll('.seat-btn');
+        const selectedSeatsList = document.getElementById('selected-seats-list');
+        const totalPriceEl = document.getElementById('total-price');
+        const proceedBtn = document.getElementById('proceed-btn');
+        const hiddenInputs = document.getElementById('hidden-inputs');
+        const form = document.getElementById('booking-form');
+        const timerContainer = document.getElementById('timer-container');
+        const timerEl = document.getElementById('timer');
+        
+        let selected = [];
+        let total = 0;
+        let countdownInterval;
+        
+        seats.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const status = btn.dataset.status;
+                if(status !== 'available' && status !== 'selected') return;
+                
+                const id = btn.dataset.seatId;
+                const price = parseFloat(btn.dataset.price);
+                const name = btn.dataset.name;
+                
+                if (selected.find(s => s.id === id)) {
+                    selected = selected.filter(s => s.id !== id);
+                    btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+                    btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                    btn.dataset.status = 'available';
+                    total -= price;
+                } else {
+                    selected.push({id, name, price});
+                    btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                    btn.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+                    btn.dataset.status = 'selected';
+                    total += price;
+                }
+                updateSummary();
+            });
+        });
+        
+        function updateSummary() {
+            if (selected.length === 0) {
+                selectedSeatsList.innerHTML = 'No seats selected.';
+                proceedBtn.disabled = true;
+            } else {
+                selectedSeatsList.innerHTML = selected.map(s => 
+                    `<div class="flex justify-between mb-1"><span>${s.name}</span><span>$${s.price.toFixed(2)}</span></div>`
+                ).join('');
+                proceedBtn.disabled = false;
+            }
+            totalPriceEl.innerHTML = `$${total.toFixed(2)}`;
+            
+            hiddenInputs.innerHTML = selected.map(s => 
+                `<input type="hidden" name="seat_ids" value="${s.id}">`
+            ).join('');
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (selected.length === 0) return;
+            
+            proceedBtn.disabled = true;
+            proceedBtn.innerHTML = 'Reserving...';
+            
+            fetch("{% url 'bookings:reserve_seats' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    show_id: '{{ show.id }}',
+                    seat_ids: selected.map(s => s.id)
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Start timer and submit form
+                    form.submit();
+                } else {
+                    alert('Error: ' + data.error);
+                    proceedBtn.disabled = false;
+                    proceedBtn.innerHTML = 'Proceed to Payment';
+                    // Optional: Refresh seat map
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                proceedBtn.disabled = false;
+                proceedBtn.innerHTML = 'Proceed to Payment';
+            });
+        });
+    });
+</script>
+{% endblock %}

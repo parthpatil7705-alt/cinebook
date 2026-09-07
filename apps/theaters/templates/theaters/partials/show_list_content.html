@@ -1,0 +1,29 @@
+{% if grouped_shows %}
+    {% for theater, shows in grouped_shows.items %}
+    <div class="bg-slate-800 rounded-lg p-6 mb-6 border border-slate-700">
+        <h2 class="text-xl font-bold mb-4">{{ theater.name }} <span class="text-sm font-normal text-slate-400">- {{ theater.city.name }}</span></h2>
+        <div class="flex flex-wrap gap-4">
+            {% for show in shows %}
+            <div class="border border-slate-700 rounded p-4 w-48 flex flex-col justify-between">
+                <div>
+                    <div class="text-lg font-bold mb-1">{{ show.start_time|time:"h:i A" }}</div>
+                    <div class="text-xs text-indigo-400 mb-2">{{ show.screen.get_screen_type_display }}</div>
+                    <div class="text-xs text-slate-400 mb-2">Available: {{ show.available_seats_count }} / {{ show.screen.total_seats }}</div>
+                </div>
+                {% if show.is_past %}
+                    <button disabled class="w-full py-2 bg-slate-700 text-slate-500 rounded cursor-not-allowed">Started</button>
+                {% elif show.is_housefull %}
+                    <button disabled class="w-full py-2 bg-slate-700 text-red-500 rounded cursor-not-allowed">Housefull</button>
+                {% else %}
+                    <a href="{% url 'bookings:select_seats' show.id %}" class="block text-center w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition">Book Now</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="text-center py-12 bg-slate-800 rounded-lg border border-slate-700">
+        <p class="text-slate-400 text-lg">No shows available for the selected date.</p>
+    </div>
+{% endif %}

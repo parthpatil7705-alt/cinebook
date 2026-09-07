@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-8 text-slate-100">
+    <div class="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-8 mb-8">
+        <h1 class="text-3xl font-bold mb-4">{{ theater.name }}</h1>
+        <p class="text-slate-400 mb-2"><i class="fas fa-map-marker-alt mr-2"></i>{{ theater.address }}, {{ theater.city.name }}</p>
+        <p class="text-slate-400 mb-2"><i class="fas fa-phone mr-2"></i>{{ theater.phone }}</p>
+        <p class="text-slate-400 mb-6"><i class="fas fa-envelope mr-2"></i>{{ theater.email }}</p>
+    </div>
+
+    <h2 class="text-2xl font-bold mb-4">Screens</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {% for screen in theater.screens.all %}
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <h3 class="text-xl font-bold mb-2">{{ screen.name }}</h3>
+            <span class="inline-block px-2 py-1 bg-indigo-900 text-indigo-300 rounded text-sm mb-4">{{ screen.get_screen_type_display }}</span>
+            <p class="text-slate-400">{{ screen.total_seats }} Seats</p>
+            <div class="mt-4 p-4 bg-slate-900 rounded border border-slate-700 flex flex-col items-center">
+                <div class="w-3/4 h-2 bg-slate-600 rounded mb-4" style="border-radius: 50% / 100% 100% 0 0;"></div>
+                <p class="text-xs text-slate-500">Screen Layout Preview</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

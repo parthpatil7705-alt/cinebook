@@ -1,0 +1,213 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}CineBook — Book movie tickets online. Browse movies, select seats, and get instant e-tickets.{% endblock %}">
+    <title>{% block title %}CineBook{% endblock %} | Movie Tickets Online</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% block extra_css %}{% endblock %}
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="main-navbar">
+        <div class="container">
+            <a href="{% url 'home' %}" class="navbar-brand">
+                <span class="logo-icon">🎬</span>
+                <span>Cine<span class="text-gradient">Book</span></span>
+            </a>
+
+            <button class="nav-toggle" onclick="document.querySelector('.navbar-nav').classList.toggle('open')" aria-label="Toggle navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <ul class="navbar-nav" id="nav-menu">
+                <li><a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
+                <li><a href="{% url 'movies:movie_list' %}" class="{% if 'movies' in request.path %}active{% endif %}">Movies</a></li>
+                <li><a href="{% url 'theaters:theater_list' %}" class="{% if 'theaters' in request.path %}active{% endif %}">Theaters</a></li>
+                {% if user.is_authenticated %}
+                <li><a href="{% url 'accounts:bookings' %}" class="{% if 'bookings' in request.path %}active{% endif %}">My Bookings</a></li>
+                {% endif %}
+                {% if user.is_staff %}
+                <li><a href="{% url 'analytics:dashboard' %}" class="{% if 'dashboard' in request.path %}active{% endif %}"><i class="fas fa-chart-bar"></i> Dashboard</a></li>
+                {% endif %}
+            </ul>
+
+            <div class="navbar-search" id="search-bar">
+                <i class="fas fa-search"></i>
+                <form action="{% url 'movies:movie_list' %}" method="GET">
+                    <input type="text" name="q" placeholder="Search movies..." value="{{ request.GET.q }}" autocomplete="off">
+                </form>
+            </div>
+
+            <div class="navbar-actions">
+                {% if user.is_authenticated %}
+                <a href="{% url 'accounts:profile' %}" class="navbar-user" title="{{ user.get_full_name }}">
+                    <span class="avatar">{{ user.first_name.0 }}{{ user.last_name.0 }}</span>
+                    <span style="color: var(--color-text-secondary); font-size: 0.9rem;">{{ user.first_name }}</span>
+                </a>
+                <a href="{% url 'accounts:logout' %}" class="btn btn-ghost btn-sm" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+                {% else %}
+                <a href="{% url 'accounts:login' %}" class="btn btn-ghost btn-sm">Login</a>
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toast-container">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="toast toast-{{ message.tags }}" role="alert">
+            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+            <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Main content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    {% block footer %}
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="footer-brand">
+                        <span>🎬</span> CineBook
+                    </div>
+                    <p class="footer-desc">
+                        Your premium destination for booking movie tickets online.
+                        Browse movies, choose your perfect seats, and enjoy the show.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="footer-title">Explore</h4>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'movies:movie_list' %}">All Movies</a></li>
+                        <li><a href="{% url 'theaters:theater_list' %}">Theaters</a></li>
+                        <li><a href="{% url 'movies:movie_list' %}?sort=newest">New Releases</a></li>
+                        <li><a href="{% url 'movies:movie_list' %}?sort=rating">Top Rated</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="footer-title">Account</h4>
+                    <ul class="footer-links">
+                        {% if user.is_authenticated %}
+                        <li><a href="{% url 'accounts:profile' %}">My Profile</a></li>
+                        <li><a href="{% url 'accounts:bookings' %}">Booking History</a></li>
+                        <li><a href="{% url 'payments:payment_history' %}">Payment History</a></li>
+                        {% else %}
+                        <li><a href="{% url 'accounts:login' %}">Login</a></li>
+                        <li><a href="{% url 'accounts:register' %}">Register</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="footer-title">Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Contact Us</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2026 CineBook. All rights reserved.</span>
+                <span>Made with <span style="color: var(--color-danger);">❤</span> using Django</span>
+            </div>
+        </div>
+    </footer>
+    {% endblock %}
+
+    <!-- Scripts -->
+    <script>
+        // Auto-dismiss toasts after 5 seconds
+        document.querySelectorAll('.toast').forEach(toast => {
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        });
+
+        // CSRF token for AJAX requests
+        function getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                   '{{ csrf_token }}';
+        }
+
+        // Toast notification helper
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas ${icons[type] || icons.info}"></i>
+                <span>${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            return '₹' + parseFloat(amount).toLocaleString('en-IN', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .glass-card {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-900 text-slate-200 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header & Filters -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                Analytics Dashboard
+            </h1>
+            
+            <form method="GET" class="flex gap-3 bg-slate-800 p-2 rounded-lg border border-slate-700">
+                <input type="date" name="date_start" value="{{ date_start }}" class="bg-slate-900 border border-slate-600 rounded px-3 py-1.5 text-sm text-slate-300">
+                <span class="self-center text-slate-500">to</span>
+                <input type="date" name="date_end" value="{{ date_end }}" class="bg-slate-900 border border-slate-600 rounded px-3 py-1.5 text-sm text-slate-300">
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded text-sm transition-colors">Apply</button>
+            </form>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="glass-card p-6 rounded-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path></svg>
+                </div>
+                <h3 class="text-slate-400 text-sm font-medium mb-1">Total Revenue</h3>
+                <p class="text-3xl font-bold text-white">₹{{ summary.total_revenue|floatformat:0 }}</p>
+            </div>
+            
+            <div class="glass-card p-6 rounded-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
+                </div>
+                <h3 class="text-slate-400 text-sm font-medium mb-1">Total Bookings</h3>
+                <p class="text-3xl font-bold text-white">{{ summary.total_bookings }}</p>
+            </div>
+            
+            <div class="glass-card p-6 rounded-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
+                </div>
+                <h3 class="text-slate-400 text-sm font-medium mb-1">New Users</h3>
+                <p class="text-3xl font-bold text-white">{{ summary.total_new_users }}</p>
+            </div>
+            
+            <div class="glass-card p-6 rounded-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path></svg>
+                </div>
+                <h3 class="text-slate-400 text-sm font-medium mb-1">Avg Occupancy</h3>
+                <p class="text-3xl font-bold text-white">{{ summary.avg_occupancy|floatformat:1 }}%</p>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Revenue Chart -->
+            <div class="glass-card p-6 rounded-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold text-slate-100">Revenue Trends</h3>
+                    <a href="{% url 'analytics:export' %}?report_type=revenue&date_start={{ date_start }}&date_end={{ date_end }}" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-slate-300 transition-colors">Export CSV</a>
+                </div>
+                <canvas id="revenueChart" height="250"></canvas>
+            </div>
+            
+            <!-- Bookings Chart -->
+            <div class="glass-card p-6 rounded-xl">
+                <h3 class="font-semibold text-slate-100 mb-4">Daily Bookings</h3>
+                <canvas id="bookingsChart" height="250"></canvas>
+            </div>
+            
+            <!-- Top Movies -->
+            <div class="glass-card p-6 rounded-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold text-slate-100">Top Movies</h3>
+                    <a href="{% url 'analytics:export' %}?report_type=movies&date_start={{ date_start }}&date_end={{ date_end }}" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-slate-300 transition-colors">Export CSV</a>
+                </div>
+                <canvas id="moviesChart" height="250"></canvas>
+            </div>
+            
+            <!-- Theater Occupancy -->
+            <div class="glass-card p-6 rounded-xl">
+                <h3 class="font-semibold text-slate-100 mb-4">Theater Occupancy (%)</h3>
+                <canvas id="occupancyChart" height="250"></canvas>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Peak Hours -->
+            <div class="glass-card p-6 rounded-xl lg:col-span-2">
+                <h3 class="font-semibold text-slate-100 mb-4">Peak Booking Hours</h3>
+                <canvas id="peakHoursChart" height="200"></canvas>
+            </div>
+            
+            <!-- Cancellations -->
+            <div class="glass-card p-6 rounded-xl flex flex-col justify-center items-center text-center">
+                <h3 class="font-semibold text-slate-100 mb-6 self-start w-full text-left">Cancellations</h3>
+                
+                <div class="w-full bg-slate-800 rounded-full h-4 mb-4 overflow-hidden">
+                    <div class="bg-red-500 h-4" style="width: {% if summary.total_bookings > 0 %}{% widthratio cancellation_stats.count|default:0 summary.total_bookings 100 %}{% else %}0{% endif %}%"></div>
+                </div>
+                
+                <div class="grid grid-cols-2 w-full gap-4 mt-4">
+                    <div class="bg-slate-800 p-4 rounded-lg">
+                        <p class="text-sm text-slate-400 mb-1">Count</p>
+                        <p class="text-xl font-bold text-red-400">{{ cancellation_stats.count|default:0 }}</p>
+                    </div>
+                    <div class="bg-slate-800 p-4 rounded-lg">
+                        <p class="text-sm text-slate-400 mb-1">Amount</p>
+                        <p class="text-xl font-bold text-red-400">₹{{ cancellation_stats.amount|default:0|floatformat:0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Scripts -->
+{{ revenue_data|json_script:"revenueData" }}
+{{ trends_data|json_script:"trendsData" }}
+{{ movies_data|json_script:"moviesData" }}
+{{ occupancy_data|json_script:"occupancyData" }}
+{{ peak_hours_data|json_script:"peakHoursData" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart Defaults
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    
+    // Parsed Data
+    const revData = JSON.parse(document.getElementById('revenueData').textContent);
+    const trData = JSON.parse(document.getElementById('trendsData').textContent);
+    const movData = JSON.parse(document.getElementById('moviesData').textContent);
+    const occData = JSON.parse(document.getElementById('occupancyData').textContent);
+    const peakData = JSON.parse(document.getElementById('peakHoursData').textContent);
+    
+    // Revenue Chart
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: {
+            labels: revData.map(d => new Date(d.period).toLocaleDateString()),
+            datasets: [{
+                label: 'Revenue (₹)',
+                data: revData.map(d => d.revenue),
+                borderColor: '#818cf8',
+                backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Bookings Trend
+    new Chart(document.getElementById('bookingsChart'), {
+        type: 'bar',
+        data: {
+            labels: trData.map(d => new Date(d.date).toLocaleDateString()),
+            datasets: [{
+                label: 'Bookings',
+                data: trData.map(d => d.count),
+                backgroundColor: '#38bdf8',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Top Movies
+    new Chart(document.getElementById('moviesChart'), {
+        type: 'bar',
+        data: {
+            labels: movData.map(d => d.title.length > 20 ? d.title.substring(0,20)+'...' : d.title),
+            datasets: [{
+                label: 'Bookings',
+                data: movData.map(d => d.booking_count),
+                backgroundColor: '#c084fc',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+    
+    // Occupancy
+    new Chart(document.getElementById('occupancyChart'), {
+        type: 'doughnut',
+        data: {
+            labels: occData.map(d => d.name),
+            datasets: [{
+                data: occData.map(d => d.occupancy),
+                backgroundColor: ['#6366f1', '#8b5cf6', '#d946ef', '#f43f5e', '#f97316', '#eab308'],
+                borderWidth: 0,
+                cutout: '70%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { color: '#e2e8f0', padding: 20 } }
+            }
+        }
+    });
+    
+    // Peak Hours
+    new Chart(document.getElementById('peakHoursChart'), {
+        type: 'bar',
+        data: {
+            labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+            datasets: [{
+                label: 'Bookings by Hour',
+                data: Array.from({length: 24}, (_, i) => {
+                    const match = peakData.find(d => d.hour === i);
+                    return match ? match.count : 0;
+                }),
+                backgroundColor: '#10b981',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

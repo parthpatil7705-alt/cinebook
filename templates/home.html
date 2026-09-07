@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Home — Now Showing{% endblock %}
+{% block meta_description %}Book movie tickets online at CineBook. Browse now showing movies, trending films, and upcoming releases. Secure seat reservation and instant e-tickets.{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+{% if featured_movie %}
+<section class="hero" id="hero-section">
+    <div class="hero-bg" style="background-image: url('{% if featured_movie.primary_poster %}{{ featured_movie.primary_poster.image.url }}{% endif %}');"></div>
+    <div class="hero-content">
+        <div class="container">
+            <div style="max-width: 600px;">
+                {% if featured_movie.age_certification %}
+                <span class="badge badge-primary" style="margin-bottom: var(--space-md);">{{ featured_movie.get_age_certification_display }}</span>
+                {% endif %}
+                <h1 style="font-size: 3rem; margin-bottom: var(--space-md);">{{ featured_movie.title }}</h1>
+                <div class="flex items-center gap-md mb-lg" style="color: var(--color-text-secondary);">
+                    <span class="flex items-center gap-xs">
+                        <i class="fas fa-star" style="color: var(--color-warning);"></i>
+                        {{ featured_movie.avg_rating }}/5
+                    </span>
+                    <span>•</span>
+                    <span><i class="fas fa-clock"></i> {{ featured_movie.duration }}</span>
+                    <span>•</span>
+                    <span>{{ featured_movie.release_date|date:"M d, Y" }}</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-xl); line-height: 1.8;">
+                    {{ featured_movie.description|truncatewords:30 }}
+                </p>
+                <div class="flex gap-md">
+                    <a href="{% url 'movies:movie_detail' featured_movie.slug %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-ticket-alt"></i> Book Now
+                    </a>
+                    {% if featured_movie.trailer_youtube_id %}
+                    <button class="btn btn-secondary btn-lg" onclick="openTrailer('{{ featured_movie.trailer_youtube_id }}')">
+                        <i class="fas fa-play"></i> Watch Trailer
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% else %}
+<!-- Fallback hero when no featured movie -->
+<section class="hero" style="height: 40vh; min-height: 300px; background: linear-gradient(135deg, #0f172a, #1e293b);">
+    <div class="hero-content" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+        <div class="container text-center">
+            <h1 style="font-size: 3rem;">Welcome to <span class="text-gradient">CineBook</span></h1>
+            <p style="color: var(--color-text-secondary); font-size: 1.2rem; margin-top: var(--space-md);">
+                Book movie tickets online • Select perfect seats • Instant e-tickets
+            </p>
+            <a href="{% url 'movies:movie_list' %}" class="btn btn-primary btn-lg mt-xl">
+                <i class="fas fa-film"></i> Browse Movies
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Now Showing -->
+{% if now_showing %}
+<section class="page-content" style="padding-top: var(--space-2xl);">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">
+                <span class="icon"><i class="fas fa-fire"></i></span>
+                Now Showing
+            </h2>
+            <a href="{% url 'movies:movie_list' %}" class="section-link">
+                View All <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="horizontal-scroll" id="now-showing-scroll">
+            {% for movie in now_showing %}
+            <a href="{% url 'movies:movie_detail' movie.slug %}" class="movie-card card" style="width: 220px;">
+                <div class="card-img-wrapper">
+                    {% if movie.primary_poster %}
+                    <img src="{{ movie.primary_poster.image.url }}" alt="{{ movie.title }}" loading="lazy">
+                    {% else %}
+                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #1e293b, #334155); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-film" style="font-size: 3rem; color: var(--color-text-muted);"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-img-overlay">
+                        <h4 style="font-size: 1rem; margin-bottom: 4px;">{{ movie.title }}</h4>
+                        <div class="genre-tags">
+                            {% for genre in movie.genres.all|slice:":2" %}
+                            <span class="genre-tag">{{ genre.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if movie.avg_rating %}
+                    <div class="rating-badge">
+                        <i class="fas fa-star"></i> {{ movie.avg_rating }}
+                    </div>
+                    {% endif %}
+                    {% if movie.age_certification %}
+                    <div class="cert-badge">{{ movie.age_certification }}</div>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Trending Movies -->
+{% if trending %}
+<section style="padding: var(--space-2xl) 0;">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">
+                <span class="icon"><i class="fas fa-chart-line"></i></span>
+                Trending Now
+            </h2>
+            <a href="{% url 'movies:movie_list' %}?sort=popularity" class="section-link">
+                View All <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-4">
+            {% for movie in trending|slice:":8" %}
+            <a href="{% url 'movies:movie_detail' movie.slug %}" class="movie-card card">
+                <div class="card-img-wrapper">
+                    {% if movie.primary_poster %}
+                    <img src="{{ movie.primary_poster.image.url }}" alt="{{ movie.title }}" loading="lazy">
+                    {% else %}
+                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #1e293b, #334155); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-film" style="font-size: 3rem; color: var(--color-text-muted);"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-img-overlay">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 4px;">{{ movie.title }}</h4>
+                        <div class="genre-tags">
+                            {% for genre in movie.genres.all|slice:":2" %}
+                            <span class="genre-tag">{{ genre.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if movie.avg_rating %}
+                    <div class="rating-badge">
+                        <i class="fas fa-star"></i> {{ movie.avg_rating }}
+                    </div>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Recommended For You (only if logged in) -->
+{% if recommended %}
+<section style="padding: var(--space-2xl) 0;">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">
+                <span class="icon"><i class="fas fa-magic"></i></span>
+                Recommended For You
+            </h2>
+        </div>
+
+        <div class="horizontal-scroll">
+            {% for movie in recommended %}
+            <a href="{% url 'movies:movie_detail' movie.slug %}" class="movie-card card" style="width: 200px;">
+                <div class="card-img-wrapper">
+                    {% if movie.primary_poster %}
+                    <img src="{{ movie.primary_poster.image.url }}" alt="{{ movie.title }}" loading="lazy">
+                    {% else %}
+                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #1e293b, #334155); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-film" style="font-size: 2rem; color: var(--color-text-muted);"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-img-overlay">
+                        <h4 style="font-size: 0.9rem;">{{ movie.title }}</h4>
+                    </div>
+                    {% if movie.avg_rating %}
+                    <div class="rating-badge">
+                        <i class="fas fa-star"></i> {{ movie.avg_rating }}
+                    </div>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Recently Released -->
+{% if recently_released %}
+<section style="padding: var(--space-2xl) 0;">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">
+                <span class="icon"><i class="fas fa-sparkles"></i></span>
+                Recently Released
+            </h2>
+            <a href="{% url 'movies:movie_list' %}?sort=newest" class="section-link">
+                View All <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-4">
+            {% for movie in recently_released|slice:":4" %}
+            <a href="{% url 'movies:movie_detail' movie.slug %}" class="movie-card card">
+                <div class="card-img-wrapper">
+                    {% if movie.primary_poster %}
+                    <img src="{{ movie.primary_poster.image.url }}" alt="{{ movie.title }}" loading="lazy">
+                    {% else %}
+                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #1e293b, #334155); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-film" style="font-size: 3rem; color: var(--color-text-muted);"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-img-overlay">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 4px;">{{ movie.title }}</h4>
+                        <span style="font-size: 0.8rem; color: var(--color-text-muted);">
+                            <i class="fas fa-calendar"></i> {{ movie.release_date|date:"M d" }}
+                        </span>
+                    </div>
+                    {% if movie.avg_rating %}
+                    <div class="rating-badge">
+                        <i class="fas fa-star"></i> {{ movie.avg_rating }}
+                    </div>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Trailer Modal -->
+<div class="modal-overlay" id="trailer-modal">
+    <div class="modal-content" style="background: transparent; border: none; padding: 0;">
+        <button class="modal-close" onclick="closeTrailer()">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="trailer-container">
+            <iframe id="trailer-iframe" src="" allowfullscreen
+                sandbox="allow-scripts allow-same-origin allow-presentation"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                referrerpolicy="strict-origin-when-cross-origin"
+                loading="lazy"></iframe>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openTrailer(youtubeId) {
+        const modal = document.getElementById('trailer-modal');
+        const iframe = document.getElementById('trailer-iframe');
+        iframe.src = `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0`;
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeTrailer() {
+        const modal = document.getElementById('trailer-modal');
+        const iframe = document.getElementById('trailer-iframe');
+        iframe.src = '';
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Close modal on overlay click
+    document.getElementById('trailer-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeTrailer();
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeTrailer();
+    });
+</script>
+{% endblock %}

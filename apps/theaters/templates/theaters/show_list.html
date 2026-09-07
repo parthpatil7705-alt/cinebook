@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-8 text-slate-100">
+    <div class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-bold">Shows for {{ movie.title }}</h1>
+        <form method="get" class="flex gap-4">
+            <select name="city" onchange="this.form.submit()" class="bg-slate-800 text-white rounded p-2 border border-slate-700">
+                <option value="">All Cities</option>
+                {% for city in cities %}
+                    <option value="{{ city.slug }}" {% if city.slug == selected_city %}selected{% endif %}>{{ city.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Date Tabs -->
+    <div class="flex gap-2 overflow-x-auto mb-8 pb-2">
+        {% for d in date_tabs %}
+        <a href="?date={{ d|date:'Y-m-d' }}{% if selected_city %}&city={{ selected_city }}{% endif %}" 
+           class="px-4 py-2 rounded-full whitespace-nowrap border {% if d == selected_date %}bg-indigo-600 border-indigo-600 text-white{% else %}border-slate-700 bg-slate-800 text-slate-400 hover:text-white{% endif %}">
+            {{ d|date:"D, M d" }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <div id="show-list-container">
+        {% include 'theaters/partials/show_list_content.html' %}
+    </div>
+</div>
+{% endblock %}
