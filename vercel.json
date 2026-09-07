@@ -1,7 +1,7 @@
 {
   "builds": [
     {
-      "src": "cinebook/wsgi.py",
+      "src": "vercel_app.py",
       "use": "@vercel/python"
     },
     {
@@ -19,7 +19,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "cinebook/wsgi.py"
+      "dest": "vercel_app.py"
     }
   ]
 }
