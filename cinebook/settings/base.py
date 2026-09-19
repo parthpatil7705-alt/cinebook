@@ -19,7 +19,7 @@ if os.path.isfile(env_file):
 
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-cinebook-fallback-secret-key-for-deployment') or 'django-insecure-cinebook-fallback-secret-key-for-deployment'
 DEBUG = env('DEBUG', default=False)
-ALLOWED_HOSTS = env('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '.vercel.app'])
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
